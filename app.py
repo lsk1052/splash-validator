@@ -107,6 +107,10 @@ st.markdown(
     [data-testid="stSidebar"] {
         background-color: #191919;
     }
+    /* 사이드바 내부의 모든 라벨과 텍스트 색상을 밝게 고정 */
+    [data-testid="stSidebar"] label, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
+        color: #F2F2F2 !important;
+    }
     .check-pass {
         font-size: 2rem;
         font-weight: 800;

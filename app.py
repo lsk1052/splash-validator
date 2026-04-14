@@ -99,42 +99,45 @@ st.markdown(
         color: #F2F2F2;
     }
     
-    /* 2. 타이틀 레드 포인트 */
+    /* 2. 타이틀 및 포인트 컬러 */
     h1, h2, h3, h4 {
         color: #E60012 !important;
     }
 
-    /* 3. 사이드바 배경 및 일반 텍스트 */
+    /* 3. 사이드바 전체 설정 */
     [data-testid="stSidebar"] {
         background-color: #191919;
     }
-    [data-testid="stSidebar"] label p, 
+
+    /* 4. [핵심] 사이드바 내의 '모든' 글자 요소를 화이트로 강제 고정 */
+    /* 불렛 포인트, 리스트 텍스트, 라벨 등을 모두 포함합니다 */
+    [data-testid="stSidebar"] div, 
     [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span {
+    [data-testid="stSidebar"] li, 
+    [data-testid="stSidebar"] span, 
+    [data-testid="stSidebar"] label {
         color: #F2F2F2 !important;
     }
 
-    /* 4. 규격 사이즈 박스(code) 배경을 어둡게 */
+    /* 5. 규격 수치 박스(code) 배경 및 글자색 설정 */
     [data-testid="stSidebar"] code {
-        background-color: #333333 !important;
-        color: #F2F2F2 !important;
+        background-color: #333333 !important; /* 박스 배경은 어둡게 */
+        color: #FFFFFF !important; /* 글자는 하얗게 */
         padding: 0.2rem 0.4rem !important;
         border-radius: 4px !important;
+        font-weight: 600 !important;
     }
 
-    /* 5. 업로드 버튼 및 영역 디자인 수정 */
+    /* 6. 업로드 버튼 영역 디자인 */
     [data-testid="stFileUploader"] section {
         background-color: #1E1E1E !important;
         border: 1px dashed #444444 !important;
-        color: #F2F2F2 !important;
     }
-    /* 업로드 버튼 자체를 어둡게 */
     [data-testid="stFileUploader"] button {
         background-color: #333333 !important;
         color: #F2F2F2 !important;
         border: 1px solid #555555 !important;
     }
-    /* 업로드 아이콘 및 안내 텍스트 컬러 */
     [data-testid="stFileUploader"] svg {
         fill: #F2F2F2 !important;
     }
@@ -142,7 +145,7 @@ st.markdown(
         color: #AAAAAA !important;
     }
 
-    /* 6. 검수 결과 스타일 */
+    /* 7. 결과 메시지 스타일 */
     .check-pass { font-size: 2rem; font-weight: 800; color: #00E676; margin: 0.4rem 0 1rem 0; }
     .check-fail { font-size: 2rem; font-weight: 800; color: #FF5252; margin: 0.4rem 0 1rem 0; }
     .check-detail { font-size: 1.05rem; color: #DDDDDD; margin-bottom: 1.2rem; }

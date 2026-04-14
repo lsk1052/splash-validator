@@ -93,51 +93,61 @@ def apply_guide_overlay(image: Image.Image, os_name: str) -> Image.Image:
 st.markdown(
     """
     <style>
+    /* 1. 전체 앱 배경 */
     .stApp {
         background-color: #111111;
         color: #F2F2F2;
     }
-    h1, h2, h3, h4 {
-        color: #E60012 !important; /* 롯데ON 레드 포인트 */
-    }
-    .block-container {
-        padding-top: 1.4rem;
-        max-width: 1400px;
-    }
     
-    /* 사이드바 배경 설정 */
+    /* 2. 타이틀 레드 포인트 */
+    h1, h2, h3, h4 {
+        color: #E60012 !important;
+    }
+
+    /* 3. 사이드바 배경 및 일반 텍스트 */
     [data-testid="stSidebar"] {
         background-color: #191919;
     }
-    
-    /* 사이드바 내부의 모든 텍스트(라벨, 설명, 코드 수치 등)를 하얗게 고정 */
-    [data-testid="stSidebar"] *, 
-    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] label p, 
     [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] code {
+    [data-testid="stSidebar"] span {
         color: #F2F2F2 !important;
-        -webkit-text-fill-color: #F2F2F2 !important;
     }
 
-    /* 검수 결과 텍스트 스타일 */
-    .check-pass {
-        font-size: 2rem;
-        font-weight: 800;
-        color: #00E676;
-        margin: 0.4rem 0 1rem 0;
+    /* 4. 규격 사이즈 박스(code) 배경을 어둡게 */
+    [data-testid="stSidebar"] code {
+        background-color: #333333 !important;
+        color: #F2F2F2 !important;
+        padding: 0.2rem 0.4rem !important;
+        border-radius: 4px !important;
     }
-    .check-fail {
-        font-size: 2rem;
-        font-weight: 800;
-        color: #FF5252;
-        margin: 0.4rem 0 1rem 0;
+
+    /* 5. 업로드 버튼 및 영역 디자인 수정 */
+    [data-testid="stFileUploader"] section {
+        background-color: #1E1E1E !important;
+        border: 1px dashed #444444 !important;
+        color: #F2F2F2 !important;
     }
-    .check-detail {
-        font-size: 1.05rem;
-        color: #DDDDDD;
-        margin-bottom: 1.2rem;
+    /* 업로드 버튼 자체를 어둡게 */
+    [data-testid="stFileUploader"] button {
+        background-color: #333333 !important;
+        color: #F2F2F2 !important;
+        border: 1px solid #555555 !important;
     }
+    /* 업로드 아이콘 및 안내 텍스트 컬러 */
+    [data-testid="stFileUploader"] svg {
+        fill: #F2F2F2 !important;
+    }
+    [data-testid="stFileUploader"] p {
+        color: #AAAAAA !important;
+    }
+
+    /* 6. 검수 결과 스타일 */
+    .check-pass { font-size: 2rem; font-weight: 800; color: #00E676; margin: 0.4rem 0 1rem 0; }
+    .check-fail { font-size: 2rem; font-weight: 800; color: #FF5252; margin: 0.4rem 0 1rem 0; }
+    .check-detail { font-size: 1.05rem; color: #DDDDDD; margin-bottom: 1.2rem; }
+    
+    .block-container { padding-top: 1.4rem; max-width: 1400px; }
     </style>
     """,
     unsafe_allow_html=True,

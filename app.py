@@ -104,48 +104,52 @@ st.markdown(
         color: #E60012 !important;
     }
 
-    /* 3. 사이드바 전체 설정 */
+    /* 3. 사이드바 스타일 */
     [data-testid="stSidebar"] {
         background-color: #191919;
     }
-
-    /* 4. [핵심] 사이드바 내의 '모든' 글자 요소를 화이트로 강제 고정 */
-    /* 불렛 포인트, 리스트 텍스트, 라벨 등을 모두 포함합니다 */
-    [data-testid="stSidebar"] div, 
+    /* 사이드바 내 모든 글자 요소 화이트 고정 */
+    [data-testid="stSidebar"] *, 
+    [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] li, 
     [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] label {
+    [data-testid="stSidebar"] li {
         color: #F2F2F2 !important;
     }
-
-    /* 5. 규격 수치 박스(code) 배경 및 글자색 설정 */
+    /* 사이드바 내 수치 박스 배경 */
     [data-testid="stSidebar"] code {
-        background-color: #333333 !important; /* 박스 배경은 어둡게 */
-        color: #FFFFFF !important; /* 글자는 하얗게 */
+        background-color: #333333 !important;
+        color: #FFFFFF !important;
         padding: 0.2rem 0.4rem !important;
         border-radius: 4px !important;
-        font-weight: 600 !important;
     }
 
-    /* 6. 업로드 버튼 영역 디자인 */
+    /* 4. 업로드 영역 디자인 수정 (이미지 안내 텍스트 포함) */
     [data-testid="stFileUploader"] section {
         background-color: #1E1E1E !important;
         border: 1px dashed #444444 !important;
     }
+    
+    /* 업로드 버튼 옆의 파일 제한 정보 텍스트를 밝게 */
+    [data-testid="stFileUploader"] div, 
+    [data-testid="stFileUploader"] small, 
+    [data-testid="stFileUploader"] p {
+        color: #BBBBBB !important; /* 약간 밝은 회색으로 가독성 확보 */
+    }
+
+    /* 업로드 버튼 자체 스타일 */
     [data-testid="stFileUploader"] button {
         background-color: #333333 !important;
         color: #F2F2F2 !important;
         border: 1px solid #555555 !important;
     }
+    
+    /* 업로드 아이콘 컬러 */
     [data-testid="stFileUploader"] svg {
         fill: #F2F2F2 !important;
     }
-    [data-testid="stFileUploader"] p {
-        color: #AAAAAA !important;
-    }
 
-    /* 7. 결과 메시지 스타일 */
+    /* 5. 검수 결과 스타일 */
     .check-pass { font-size: 2rem; font-weight: 800; color: #00E676; margin: 0.4rem 0 1rem 0; }
     .check-fail { font-size: 2rem; font-weight: 800; color: #FF5252; margin: 0.4rem 0 1rem 0; }
     .check-detail { font-size: 1.05rem; color: #DDDDDD; margin-bottom: 1.2rem; }

@@ -1,6 +1,7 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
-
+import numpy as np
+import easyocr
 
 st.set_page_config(
     page_title="스플래시 가이드 검증기",
@@ -8,6 +9,22 @@ st.set_page_config(
     layout="wide",
 )
 
+@st.cache_resource
+def get_ocr_reader():
+    return easyocr.Reader(['ko', 'en'])
+
+reader = get_ocr_reader()
+
+def check_ad_text(image):
+    img_np = np.array(image)
+    results = reader.readtext(img_np)
+    ad_keywords = ['광고', 'AD', '협찬', '할인', '구매']
+    detected_ads = []
+    for (bbox, text, prob) in results:
+        for keyword in ad_keywords:
+            if keyword in text:
+                detected_ads.append({"text": text, "prob": prob})
+    return detected_ads
 
 OS_SPECS = {
     "iOS": {
@@ -196,7 +213,7 @@ else:
     is_dim_valid = (actual_w, actual_h) == (expected_w, expected_h)
 
     # 규격/용량 결과를 나란히 표시
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         if is_dim_valid:
@@ -212,6 +229,15 @@ else:
             st.markdown('<div class="check-fail">❌ 용량 초과</div>', unsafe_allow_html=True)
         st.markdown(f"**용량:** {file_size_kb:.1f} KB (기준: {SIZE_LIMIT_KB} KB 이하)")
 
+    with col3:
+        if not detected_ad_list:
+            st.markdown('<div class="check-pass">✅ 광고 텍스트 클린</div>', unsafe_allow_html=True)
+            st.markdown("**결과:** 감지된 광고성 문구 없음")
+        else:
+            st.markdown('<div class="check-fail">⚠️ 광고 텍스트 감지</div>', unsafe_allow_html=True)
+        for ad in detected_ad_list:
+            st.write(f"- `{ad['text']}` ({int(ad['prob']*100)}%)")
+
     st.divider()  # 결과와 이미지 사이 구분선
 
     # 가이드 오버레이 생성 및 출력
@@ -224,3 +250,10 @@ else:
             caption=f"{selected_os} 가이드 오버레이 결과",
             use_container_width=True,
         )
+
+        # ... 기존 규격 및 용량 체크 코드 ...
+is_dim_valid = (actual_w, actual_h) == (expected_w, expected_h)
+
+# [추가] 광고 텍스트 체크 실행
+with st.spinner('이미지 내 텍스트 분석 중...'):
+    detected_ad_list = check_ad_text(image)

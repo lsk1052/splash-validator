@@ -11,43 +11,35 @@ st.set_page_config(
 )
 
 # 2. OCR 분석 함수 (Tesseract 버전)
-from PIL import ImageOps, ImageFilter
+import google.generativeai as genai
+
+# Streamlit의 Secrets 기능을 통해 API 키를 안전하게 관리합니다.
+# [중요] Streamlit Cloud 설정에서 'GEMINI_API_KEY'를 등록해야 합니다.
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel('gemini-2.0-flash')
 
 def check_ad_text(image):
     try:
-        # 1. 분석을 위해 3가지 버전의 이미지를 준비합니다.
-        # 버전 A: 기본 그레이스케일 + 자동 대비
-        gray = ImageOps.grayscale(image)
-        ver_a = ImageOps.autocontrast(gray)
+        # AI에게 전달할 명확한 프롬프트 (UX/UI 전문가의 관점)
+        prompt = """
+        이 이미지는 모바일 앱의 스플래시 화면 시안입니다. 
+        이미지 내부에 '광고', 'AD', '협찬', '할인', '구매'와 같은 광고성 텍스트가 포함되어 있는지 확인해주세요.
+        만약 있다면 해당 단어들만 콤마(,)로 구분해서 답변해주고, 없다면 '없음'이라고만 답변하세요.
+        """
         
-        # 버전 B: 강한 이진화 (배경이 밝을 때 대비)
-        ver_b = ver_a.point(lambda x: 255 if x > 120 else 0, mode='1')
+        # 이미지 분석 실행
+        response = model.generate_content([prompt, image])
+        result_text = response.text.strip()
         
-        # 버전 C: 색상 반전 (빨간 글자가 배경보다 어둡게 처리될 경우를 대비)
-        ver_c = ImageOps.invert(ver_a).point(lambda x: 255 if x > 120 else 0, mode='1')
-
-        ad_keywords = ['광고', 'AD', '협찬', '할인', '구매']
-        detected_ads = []
-
-        # 2. 모든 버전의 이미지에 대해 psm 3(자동)과 11(흩어진 텍스트)로 이중 스캔합니다.
-        # 총 6번(이미지 3종 x 모드 2종)을 훑어 하나라도 걸리게 만듭니다.
-        for img in [ver_a, ver_b, ver_c]:
-            for psm in [3, 11]:
-                config = f'--oem 3 --psm {psm}'
-                text = pytesseract.image_to_string(img, lang='kor+eng', config=config)
-                
-                # 공백 제거 및 대문자화로 매칭 확률 극대화
-                clean_text = text.replace(" ", "").replace("\n", "").upper()
-                
-                for kw in ad_keywords:
-                    if kw.upper() in clean_text:
-                        # 중복 감지 방지
-                        if not any(d['text'] == kw for d in detected_ads):
-                            detected_ads.append({"text": kw, "prob": 1.0})
+        if "없음" in result_text or not result_text:
+            return []
         
-        return detected_ads
+        # 발견된 단어들을 리스트로 변환
+        found_words = [word.strip() for word in result_text.split(',')]
+        return [{"text": word, "prob": 1.0} for word in found_words]
+        
     except Exception as e:
-        st.error(f"OCR 분석 중 오류가 발생했습니다: {e}")
+        st.error(f"AI 분석 중 오류 발생: {e}")
         return []
 
 # 3. OS별 규격 정의

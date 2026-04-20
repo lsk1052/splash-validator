@@ -12,22 +12,28 @@ st.set_page_config(
 
 # 2. OCR 분석 함수 (Tesseract 버전)
 def check_ad_text(image):
-    # Tesseract는 별도의 모델 로드 과정 없이 바로 텍스트를 추출하므로 아주 가볍습니다.
     try:
-        # 이미지에서 한글과 영어를 추출합니다.
-        text = pytesseract.image_to_string(image, lang='kor+eng')
+        # 1. 시력 강화: 이미지를 흑백(L)으로 변환하여 글자 대비를 높입니다.
+        gray_image = image.convert('L')
         
-        ad_keywords = ['광고', 'AD', '협찬', '할인', '구매']
+        # 2. 정밀 분석 설정: --psm 3 (자동 페이지 세그먼트) 설정을 추가합니다.
+        custom_config = r'--oem 3 --psm 3'
+        text = pytesseract.image_to_string(gray_image, lang='kor+eng', config=custom_config)
+        
+        # 3. 텍스트 클리닝: 줄바꿈과 공백을 모두 없애서 키워드 매칭 확률을 높입니다.
+        clean_text = text.replace(" ", "").replace("\n", "").upper()
+        
+        ad_keywords = ['광고', 'AD']
         detected_ads = []
         
-        # 추출된 텍스트 전체에서 키워드가 포함되어 있는지 체크합니다.
+        # 키워드 검사
         for keyword in ad_keywords:
-            if keyword in text:
-                # 결과값 형식을 기존과 맞춰서 UI 수정을 최소화합니다.
+            if keyword.upper() in clean_text:
                 detected_ads.append({"text": keyword, "prob": 1.0})
+                
         return detected_ads
     except Exception as e:
-        st.error(f"OCR 엔진이 설치되지 않았거나 오류가 발생했습니다: {e}")
+        st.error(f"OCR 분석 중 오류가 발생했습니다: {e}")
         return []
 
 # 3. OS별 규격 정의

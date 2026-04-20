@@ -15,36 +15,36 @@ from PIL import ImageOps, ImageFilter
 
 def check_ad_text(image):
     try:
-        # 1. 이미지 크기 최적화 (Upscaling)
-        # 이미지가 너무 크면 글자가 작게 인식되므로, 분석하기 적당한 크기로 조절합니다.
-        w, h = image.size
-        # 가로 2000px 기준으로 리사이징하여 글자 식별력을 높입니다.
-        target_w = 2000
-        target_h = int(h * (target_w / w))
-        img_resized = image.resize((target_w, target_h), Image.Resampling.LANCZOS)
-
-        # 2. 전처리: 흑백 변환 + 대비 극대화 + 선명하게
-        # 대비를 높여서 글자와 배경을 확실히 분리합니다.
-        gray_img = ImageOps.grayscale(img_resized)
-        enhanced_img = ImageOps.autocontrast(gray_img)
-        # 선명하게 필터를 적용해 글자의 테두리를 강조합니다.
-        sharpened_img = enhanced_img.filter(ImageFilter.SHARPEN)
-
-        # 3. 전 영역 스캔 (PSM 11: 이미지 전체에서 흩어진 텍스트 찾기)
-        # 'kor+eng' 언어팩을 사용하고, 텍스트 배치가 자유로운 시안에 최적화된 설정을 씁니다.
-        custom_config = r'--oem 3 --psm 11'
-        extracted_text = pytesseract.image_to_string(sharpened_img, lang='kor+eng', config=custom_config)
+        # 1. 분석을 위해 3가지 버전의 이미지를 준비합니다.
+        # 버전 A: 기본 그레이스케일 + 자동 대비
+        gray = ImageOps.grayscale(image)
+        ver_a = ImageOps.autocontrast(gray)
         
-        # 4. 비교를 위한 텍스트 정제 (공백/줄바꿈 제거 및 대문자화)
-        clean_text = extracted_text.replace(" ", "").replace("\n", "").upper()
+        # 버전 B: 강한 이진화 (배경이 밝을 때 대비)
+        ver_b = ver_a.point(lambda x: 255 if x > 120 else 0, mode='1')
         
+        # 버전 C: 색상 반전 (빨간 글자가 배경보다 어둡게 처리될 경우를 대비)
+        ver_c = ImageOps.invert(ver_a).point(lambda x: 255 if x > 120 else 0, mode='1')
+
         ad_keywords = ['광고', 'AD', '협찬', '할인', '구매']
         detected_ads = []
-        
-        for keyword in ad_keywords:
-            if keyword.upper() in clean_text:
-                detected_ads.append({"text": keyword, "prob": 1.0})
+
+        # 2. 모든 버전의 이미지에 대해 psm 3(자동)과 11(흩어진 텍스트)로 이중 스캔합니다.
+        # 총 6번(이미지 3종 x 모드 2종)을 훑어 하나라도 걸리게 만듭니다.
+        for img in [ver_a, ver_b, ver_c]:
+            for psm in [3, 11]:
+                config = f'--oem 3 --psm {psm}'
+                text = pytesseract.image_to_string(img, lang='kor+eng', config=config)
                 
+                # 공백 제거 및 대문자화로 매칭 확률 극대화
+                clean_text = text.replace(" ", "").replace("\n", "").upper()
+                
+                for kw in ad_keywords:
+                    if kw.upper() in clean_text:
+                        # 중복 감지 방지
+                        if not any(d['text'] == kw for d in detected_ads):
+                            detected_ads.append({"text": kw, "prob": 1.0})
+        
         return detected_ads
     except Exception as e:
         st.error(f"OCR 분석 중 오류가 발생했습니다: {e}")

@@ -1,7 +1,7 @@
 import streamlit as st
 from PIL import Image, ImageDraw
 import numpy as np
-import easyocr
+import pytesseract
 
 # 1. 페이지 설정
 st.set_page_config(
@@ -10,25 +10,25 @@ st.set_page_config(
     layout="wide",
 )
 
-# 2. OCR 모델 캐싱 및 로드
-@st.cache_resource
-def get_ocr_reader():
-    # 모델 생성 설명서입니다. CPU 환경에 맞춰 gpu=False를 명시합니다.
-    return easyocr.Reader(['ko', 'en'], gpu=False)
-
+# 2. OCR 분석 함수 (Tesseract 버전)
 def check_ad_text(image):
-    # 위에서 만든 설명서(get_ocr_reader)를 사용하여 실제로 모델을 가져옵니다.
-    reader = get_ocr_reader() 
-    
-    img_np = np.array(image)
-    results = reader.readtext(img_np)
-    ad_keywords = ['광고', 'AD', '협찬', '할인', '구매']
-    detected_ads = []
-    for (bbox, text, prob) in results:
+    # Tesseract는 별도의 모델 로드 과정 없이 바로 텍스트를 추출하므로 아주 가볍습니다.
+    try:
+        # 이미지에서 한글과 영어를 추출합니다.
+        text = pytesseract.image_to_string(image, lang='kor+eng')
+        
+        ad_keywords = ['광고', 'AD', '협찬', '할인', '구매']
+        detected_ads = []
+        
+        # 추출된 텍스트 전체에서 키워드가 포함되어 있는지 체크합니다.
         for keyword in ad_keywords:
             if keyword in text:
-                detected_ads.append({"text": text, "prob": prob})
-    return detected_ads
+                # 결과값 형식을 기존과 맞춰서 UI 수정을 최소화합니다.
+                detected_ads.append({"text": keyword, "prob": 1.0})
+        return detected_ads
+    except Exception as e:
+        st.error(f"OCR 엔진이 설치되지 않았거나 오류가 발생했습니다: {e}")
+        return []
 
 # 3. OS별 규격 정의
 OS_SPECS = {

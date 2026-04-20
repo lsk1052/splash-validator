@@ -13,11 +13,12 @@ st.set_page_config(
 # 2. OCR 모델 캐싱 및 로드
 @st.cache_resource
 def get_ocr_reader():
-    return easyocr.Reader(['ko', 'en'])
-
-reader = get_ocr_reader()
+    return easyocr.Reader(['ko', 'en'], gpu=False)
 
 def check_ad_text(image):
+    # 함수 안으로 모델 로드를 옮깁니다. (이미지가 업로드되었을 때만 실행됨)
+    reader = get_ocr_reader() 
+    
     img_np = np.array(image)
     results = reader.readtext(img_np)
     ad_keywords = ['광고', 'AD', '협찬', '할인', '구매']

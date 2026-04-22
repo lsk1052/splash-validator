@@ -70,16 +70,16 @@ def evaluate_quality(pil_image):
     fshift = np.fft.fftshift(f)
     p_raw = np.mean(20 * np.log(np.abs(fshift) + 1))
     
-    # [수정] 감점폭을 살짝 완화하여 '보통' 수준의 이미지도 통과할 수 있게 함
-    purity_score = max(0, min(100, 100 - (p_raw - 173.0) * 35)) 
+    # [수정] 기준치를 180.0으로 높이고 감점Multiplier를 20으로 낮춤 (훨씬 너그러워짐)
+    purity_score = max(0, min(100, 100 - (p_raw - 180.0) * 20)) 
     
-    # 선명도 분석 (Laplacian)
+    # 선명도 분석
     lap_var = cv2.Laplacian(gray, cv2.CV_64F).var()
-    clarity_score = max(0, min(100, lap_var / 5)) 
+    clarity_score = max(0, min(100, lap_var / 10)) 
 
-    # [수정] 픽셀 깨짐 판정 기준을 50 -> 40으로 조정 (더 너그러워짐)
-    is_blurry = clarity_score < 20
-    is_pixelated = purity_score < 40 
+    # [수정] 판정 문턱을 낮추어 고화질 이미지가 억울하게 탈락하는 것을 방지
+    is_blurry = clarity_score < 15
+    is_pixelated = purity_score < 30 # (40 -> 30으로 하향)
     
     quality_score = (purity_score * 0.7) + (clarity_score * 0.3)
     
@@ -91,26 +91,35 @@ def get_quality_heatmap(pil_image):
     h, w = gray.shape
     overlay = img_cv.copy()
     
-    # 격자 사이즈를 32px로 유지 (정밀도 유지)
-    grid_size = 32 
-    detected_count = 0
+    grid_size = 32
+    blocks = []
     
+    # 1단계: 모든 구역의 점수를 먼저 계산합니다.
     for y in range(0, h, grid_size):
         for x in range(0, w, grid_size):
             block = gray[y:y+grid_size, x:x+grid_size]
             if block.size < 100: continue
-            
-            # 수치 분석
             score = cv2.Laplacian(block, cv2.CV_64F).var()
-            
-            # [핵심 수정] 기준을 150.0으로 대폭 인상!
-            # 일반적인 선명한 텍스트는 50~100 사이가 나오지만, 
-            # 'OPEN RUN'처럼 깨진 텍스트는 150을 훌쩍 넘깁니다.
-            if score > 150.0:
-                cv2.rectangle(overlay, (x, y), (x+grid_size, y+grid_size), (0, 0, 255), -1)
-                detected_count += 1
+            blocks.append(((x, y), score))
+    
+    # 2단계: 이미지 전체의 평균 구역 점수를 구합니다.
+    all_scores = [b[1] for b in blocks]
+    avg_score = np.mean(all_scores)
+    std_score = np.std(all_scores)
+    
+    # 3단계: [지능형 필터] 평균보다 '표준편차의 2배' 이상 높은 곳만 빨간색으로 표시
+    # 즉, 랑콤 로고(정상 선명도)는 패스하고 OPEN RUN(비정상 노이즈)만 잡습니다.
+    detected_count = 0
+    threshold = avg_score + (std_score * 2.0)
+    
+    # 최소한의 노이즈 바닥 수치(150.0)도 함께 체크하여 너무 깨끗한 이미지는 보호
+    final_limit = max(150.0, threshold)
 
-    # 빨간 박스 투명도를 0.4로 하여 시인성 확보
+    for (x, y), score in blocks:
+        if score > final_limit:
+            cv2.rectangle(overlay, (x, y), (x+grid_size, y+grid_size), (0, 0, 255), -1)
+            detected_count += 1
+
     result_img = cv2.addWeighted(overlay, 0.4, img_cv, 0.6, 0)
     return Image.fromarray(cv2.cvtColor(result_img, cv2.COLOR_BGR2RGB)), detected_count
 

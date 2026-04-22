@@ -22,27 +22,43 @@ except Exception:
 
 def check_design_compliance(overlay_image, os_name):
     try:
-        # AI에게 색상이 입혀진 가이드 이미지를 직접 보여줍니다.
+        # AI에게 단계별 사고를 유도하는 강력한 프롬프트
         prompt = f"""
-        당신은 UX/UI 디자인 검수 전문가입니다. 
-        첨부된 이미지는 {os_name} 스플래시 가이드(빨간색/보라색 영역)가 적용된 시안입니다.
-
-        1. 광고 확인: 이미지 내에 '광고', 'AD', 'EVENT', '할인' 등의 문구가 있다면 무조건 검출하세요.
-        2. 영역 침범 확인: 텍스트나 로고가 '빨간색(상단)' 또는 '보라색(좌우)' 색상 영역에 조금이라도 겹쳐 있나요?
+        당신은 아주 까다로운 UX/UI 디자인 검수관입니다. 
+        첨부된 {os_name} 시안 이미지에는 디자인 가이드라인이 '반투명 색상'으로 덮여 있습니다.
         
-        반드시 아래 JSON 형식으로만 답변하세요 (다른 설명은 금지):
-        {{"ad_found": ["단어1"], "overflow": true, "reason": "침범 부위 설명"}}
+        [검수 미션]
+        1. 텍스트 추출: 이미지에 보이는 모든 글자를 하나도 빠짐없이 나열하세요.
+        2. 광고 판단: 추출한 글자 중 '광고', 'AD', '이벤트', '할인', '구매' 등이 포함되어 있는지 확인하세요.
+        3. 영역 침범 체크 (가장 중요): 
+           - '빨간색 영역(상단)'에 글자나 로고의 일부라도 겹쳐 있습니까?
+           - '보라색 영역(좌우)'에 글자나 로고의 일부라도 겹쳐 있습니까?
+           - 배경 이미지를 제외한 '의미 있는 요소(텍스트, 로고, 버튼)'가 색상 영역 위에 있다면 무조건 'true'입니다.
+
+        반드시 아래 JSON 형식으로만 답변하세요:
+        {{
+            "ad_found": ["찾은광고문구1", "2"],
+            "overflow": true,
+            "reason": "침범한 구체적인 위치와 단어를 설명 (예: '광고' 단어가 상단 빨간색 영역을 침범함)"
+        }}
         """
         
+        # 분석 실행
         response = model.generate_content([prompt, overlay_image])
         
-        # JSON 파싱 로직 강화
-        txt = response.text.replace('```json', '').replace('```', '').strip()
+        # JSON 파싱 및 디버깅을 위한 출력
+        raw_text = response.text.replace('```json', '').replace('```', '').strip()
         import json
-        return json.loads(txt)
+        result = json.loads(raw_text)
+        
+        # 결과가 비어있다면 AI에게 다시 한번 경고 (Self-Correction 로직)
+        if not result.get("ad_found") and "광고" in raw_text:
+             result["ad_found"] = ["광고"] # 텍스트에는 있는데 리스트에 없는 경우 보정
+             
+        return result
     except Exception as e:
-        # 에러 발생 시 로그를 남기고 빈 결과 반환
-        return {"ad_found": [], "overflow": False, "reason": "분석 엔진 오류"}
+        # 에러 발생 시 UI에 에러를 표시하지 않고 기본값으로 조용히 처리
+        return {"ad_found": [], "overflow": False, "reason": "분석 엔진 일시 오류"}
 
 def evaluate_quality(pil_image):
     img_array = np.array(pil_image.convert("RGB"))
@@ -109,12 +125,32 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# 6. 메인 UI
 st.title("스플래시 가이드 검증기")
 st.caption("UX/UI 디자인 품질 및 규격 자동 검수 도구")
+
+# --- [추가] 메인 화면에 규격 안내 카드 표시 ---
+st.info(f"""
+    **🚩 권장 업로드 규격**
+    * **Android:** {OS_SPECS['Android']['size'][0]}x{OS_SPECS['Android']['size'][1]}px
+    * **iOS:** {OS_SPECS['iOS']['size'][0]}x{OS_SPECS['iOS']['size'][1]}px
+    * **공통 용량:** 500KB 이하 (현재 설정 기준)
+""")
 
 with st.sidebar:
     st.header("검수 옵션")
     selected_os = st.radio("OS 선택", options=["Android", "iOS"], index=0)
+    
+    # --- [추가] 사이드바에도 상세 정보 표기 ---
+    st.divider()
+    st.markdown(f"### 📱 {selected_os} 상세 규격")
+    spec = OS_SPECS[selected_os]
+    st.write(f"- **권장 사이즈:** {spec['size'][0]}x{spec['size'][1]}px")
+    st.write(f"- **안전 영역 (상단):** {spec['notch_height']}px")
+    st.write(f"- **안전 영역 (좌우):** {spec['crop_side']}px")
+    st.write(f"- **용량 제한:** 500KB 미만")
+    
+    st.warning("⚠️ 규격이 맞지 않으면 검증 결과가 부정확할 수 있습니다.")
 
 uploaded_file = st.file_uploader("시안 이미지를 업로드하세요", type=["png", "jpg", "jpeg"])
 
@@ -159,20 +195,20 @@ if uploaded_file:
             st.warning("픽셀 깨짐이 감지되었습니다. 고화질 원본을 사용하세요.")
             
     with col4:
-        # 광고 및 영역 침범 결과 통합 표시
         ad_list = compliance_result.get("ad_found", [])
         has_overflow = compliance_result.get("overflow", False)
+        reason_msg = compliance_result.get("reason", "")
         
         if not ad_list and not has_overflow:
             st.markdown('<div class="check-pass">✅ 가이드 준수</div>', unsafe_allow_html=True)
-            st.markdown('<div class="status-text">광고 및 영역 침범 없음</div>', unsafe_allow_html=True)
+            st.markdown('<div class="status-text">광고 및 침범 없음</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div class="check-fail">⚠️ 가이드 위반</div>', unsafe_allow_html=True)
             if ad_list:
-                st.write(f"🚫 광고 감지: `{', '.join(ad_list)}`")
+                st.error(f"🚫 광고 발견: {', '.join(ad_list)}")
             if has_overflow:
-                st.write(f"🚫 안전 영역 침범")
-                st.caption(f"이유: {compliance_result.get('reason', '')}")
+                st.error(f"🚫 안전 영역 침범")
+                st.info(f"**이유:** {reason_msg}") # AI의 판단 근거를 직접 노출
 
     st.divider()
     

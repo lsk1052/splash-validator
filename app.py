@@ -60,38 +60,40 @@ def check_design_compliance(overlay_image, os_name):
         # 에러 발생 시 UI에 에러를 표시하지 않고 기본값으로 조용히 처리
         return {"ad_found": [], "overflow": False, "reason": "분석 엔진 일시 오류"}
 
-def evaluate_quality(pil_image):
-    img_array = np.array(pil_image.convert("RGB"))
-    img_cv = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+def get_quality_heatmap(pil_image):
+    # 분석용 이미지 변환
+    img_cv = cv2.cvtColor(np.array(pil_image.convert("RGB")), cv2.COLOR_RGB2BGR)
     gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+    h, w = gray.shape
     
-    # 1. 원본 선명도/노이즈 분석
-    sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
-    sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
-    edge_raw = np.mean(np.sqrt(sobel_x**2 + sobel_y**2))
+    # 캔버스 복제 (여기에 빨간 표시를 할 예정)
+    overlay = img_cv.copy()
     
-    f = np.fft.fft2(gray)
-    fshift = np.fft.fftshift(f)
-    p_raw = np.mean(20 * np.log(np.abs(fshift) + 1))
+    # 격자 사이즈 설정 (이미지 크기에 따라 조정 가능)
+    grid_size = 64 
+    
+    detected_count = 0
+    for y in range(0, h, grid_size):
+        for x in range(0, w, grid_size):
+            # 구역 추출
+            block = gray[y:y+grid_size, x:x+grid_size]
+            if block.shape[0] < 10 or block.shape[1] < 10: continue
+            
+            # 구역별 노이즈 분석 (FFT 기반)
+            f = np.fft.fft2(block)
+            fshift = np.fft.fftshift(f)
+            p_score = np.mean(20 * np.log(np.abs(fshift) + 1))
+            
+            # 우리가 앞서 설정한 기준(176.5)보다 높은 구역만 표시
+            # 로컬 블록은 전체 평균보다 민감하므로 수치를 살짝 조정(185.0)
+            if p_score > 185.0:
+                # 픽셀이 깨진 구역에 반투명 붉은 사각형 그리기
+                cv2.rectangle(overlay, (x, y), (x+grid_size, y+grid_size), (0, 0, 255), -1)
+                detected_count += 1
 
-    # 2. [핵심] 디자이너용 점수 변환 로직
-    # 정밀도(Purity): 175.5(최상) ~ 177.5(최악) 사이의 값을 100~0점으로 매핑
-    # 1.6점의 차이를 60점 이상의 차이로 증폭시킵니다.
-    purity_score = max(0, min(100, 100 - (p_raw - 175.0) * 40))
-    
-    # 선명도(Clarity): 텍스트에 속지 않도록 정밀도가 낮으면 선명도 점수도 깎습니다.
-    clarity_score = max(0, min(100, edge_raw * 4))
-    if purity_score < 50:
-        clarity_score *= 0.6 # 픽셀이 깨졌다면 선명함은 '가짜'이므로 감점
-
-    # 3. 판정 기준
-    is_blurry = clarity_score < 40
-    is_pixelated = purity_score < 55 # 55점 미만은 무조건 불합격
-    
-    # UI에 표시할 최종 품질 점수
-    final_design_score = (purity_score * 0.7) + (clarity_score * 0.3)
-    
-    return is_blurry, is_pixelated, final_design_score, purity_score
+    # 원본과 오버레이 합성 (투명도 0.3)
+    result_img = cv2.addWeighted(overlay, 0.3, img_cv, 0.7, 0)
+    return Image.fromarray(cv2.cvtColor(result_img, cv2.COLOR_BGR2RGB)), detected_count
 
 # 3. OS별 규격 정의
 OS_SPECS = {
@@ -198,8 +200,12 @@ if uploaded_file:
             st.markdown(f'<div class="status-text">디자인 품질: {quality_score:.0f}점</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div class="check-fail">⚠️ 화질 저하</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="status-text">품질 점수: {quality_score:.0f}점 (정밀도 부족)</div>', unsafe_allow_html=True)
-            st.warning("픽셀 깨짐이 감지되었습니다. 고화질 원본으로 변경해보시고  \n동일한 경고가 뜬다면 UX디자인팀에 검수 요청을 해주세요.")
+            st.markdown(f'<div class="status-text">품질 점수: {quality_score:.0f}점</div>', unsafe_allow_html=True)
+            
+            # [고도화 추가] 픽셀 깨짐 지점 시각화 버튼
+            if st.button("어디가 깨졌나요?"):
+                heatmap_img, count = get_quality_heatmap(image)
+                st.image(heatmap_img, caption=f"빨간색 표시 구역({count}곳)의 픽셀 노이즈가 높습니다.")
             
     with col4:
         ad_list = compliance_result.get("ad_found", [])

@@ -22,28 +22,32 @@ except Exception:
 
 def check_design_compliance(overlay_image, os_name):
     try:
-        # AI에게 단계별 사고를 유도하는 강력한 프롬프트
+        # 이 부분을 아래의 새로운 프롬프트로 교체하세요!
         prompt = f"""
         당신은 아주 까다로운 UX/UI 디자인 검수관입니다. 
-        첨부된 {os_name} 시안 이미지에는 디자인 가이드라인이 '반투명 색상'으로 덮여 있습니다.
+        첨부된 {os_name} 시안에는 디자인 가이드라인이 컬러 영역으로 표시되어 있습니다.
         
+        [가이드라인 영역 설명]
+        - 빨간색(상단): 노치 및 시스템 UI 영역 (절대 침범 불가)
+        - 자주색(좌우): 기기별로 잘릴 수 있는 크롭 영역 (중요 요소 배치 불가)
+        - 에메랄드색(좌우): 텍스트 가독성을 위한 '최소 안전 여백' (텍스트가 가급적 겹치지 않아야 함)
+
         [검수 미션]
-        1. 텍스트 추출: 이미지에 보이는 모든 글자를 하나도 빠짐없이 나열하세요.
-        2. 광고 판단: 추출한 글자 중 '광고', 'AD', '이벤트', '할인', '구매' 등이 포함되어 있는지 확인하세요.
-        3. 영역 침범 체크 (가장 중요): 
-           - '빨간색 영역(상단)'에 글자나 로고의 일부라도 겹쳐 있습니까?
-           - '보라색 영역(좌우)'에 글자나 로고의 일부라도 겹쳐 있습니까?
-           - 배경 이미지를 제외한 '의미 있는 요소(텍스트, 로고, 버튼)'가 색상 영역 위에 있다면 무조건 'true'입니다.
+        1. 텍스트 추출: 이미지 내의 모든 글자를 나열하세요.
+        2. 광고 판단: '광고', 'AD', '이벤트', '할인', '구매' 등 상업적 문구가 있는지 확인하세요.
+        3. 영역 침범 체크:
+           - 글자나 로고가 '빨간색' 또는 '자주색' 영역을 침범하면 overflow: true 입니다.
+           - 글자가 '에메랄드색' 영역에 걸쳐 있다면 가독성 주의 대상으로 판단하고 그 내용을 reason에 상세히 기술하세요.
 
         반드시 아래 JSON 형식으로만 답변하세요:
         {{
             "ad_found": ["찾은광고문구1", "2"],
             "overflow": true,
-            "reason": "침범한 구체적인 위치와 단어를 설명 (예: '광고' 단어가 상단 빨간색 영역을 침범함)"
+            "reason": "침범한 구체적인 위치와 단어, 혹은 에메랄드 영역의 가독성 피드백 설명"
         }}
         """
         
-        # 분석 실행
+        # 분석 실행 (이후 로직은 동일)
         response = model.generate_content([prompt, overlay_image])
         
         # JSON 파싱 및 디버깅을 위한 출력
@@ -123,9 +127,20 @@ def get_quality_heatmap(pil_image):
 # --- 여기까지 복사 ---
 
 # 3. OS별 규격 정의
+# 3. OS별 규격 정의 (에메랄드 패딩 규격 추가)
 OS_SPECS = {
-    "iOS": {"size": (1580, 2795), "crop_side": 217, "notch_height": 328},
-    "Android": {"size": (1536, 2152), "crop_side": 328, "notch_height": 211},
+    "iOS": {
+        "size": (1580, 2795), 
+        "crop_side": 217, 
+        "notch_height": 328,
+        "padding_width": 100  # 에메랄드 영역 너비
+    },
+    "Android": {
+        "size": (1536, 2152), 
+        "crop_side": 328, 
+        "notch_height": 211,
+        "padding_width": 100  # 에메랄드 영역 너비
+    },
 }
 
 def apply_guide_overlay(image, os_name):
@@ -134,11 +149,28 @@ def apply_guide_overlay(image, os_name):
     canvas = image.convert("RGBA")
     overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    purple, red = (128, 0, 128, 76), (255, 0, 0, 76)
-    crop_side, notch_height = config["crop_side"], config["notch_height"]
+    
+    # 컬러 정의 (에메랄드 추가: 50, 255, 170, 76)
+    purple = (128, 0, 128, 76)
+    red = (255, 0, 0, 76)
+    emerald = (50, 255, 170, 76) 
+    
+    crop_side = config["crop_side"]
+    notch_height = config["notch_height"]
+    pad_w = config["padding_width"]
+
+    # 1. 자주색 영역 (좌우 크롭 영역)
     draw.rectangle([(0, 0), (crop_side, height)], fill=purple)
     draw.rectangle([(width - crop_side, 0), (width, height)], fill=purple)
+    
+    # 2. 에메랄드 영역 (좌우 안전 여백 - 크롭 영역 안쪽으로 배치)
+    # 상단 노치 영역 아래부터 시작하도록 세팅
+    draw.rectangle([(crop_side, notch_height), (crop_side + pad_w, height)], fill=emerald)
+    draw.rectangle([(width - crop_side - pad_w, notch_height), (width - crop_side, height)], fill=emerald)
+    
+    # 3. 빨간색 영역 (상단 노치 영역)
     draw.rectangle([(0, 0), (width, notch_height)], fill=red)
+    
     return Image.alpha_composite(canvas, overlay).convert("RGB")
 
 # 5. 디자인 스타일 (CSS)

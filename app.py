@@ -195,6 +195,30 @@ st.markdown("""
         margin-bottom: 20px;
         font-weight: bold;
     }
+
+    /* 기존 스타일 하단에 추가 */
+.guide-container {
+    background-color: #1E1E1E;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #333333;
+    margin-bottom: 20px;
+}
+
+.guide-item {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 20px;
+    font-size: 0.85rem;
+    color: #DDDDDD;
+}
+
+.color-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px; /* 요청하신 4px 적용 */
+    margin-right: 8px;
+}
     /* 실제 사이즈 이미지가 중앙에 오도록 설정 */
     .stImage { display: flex; justify-content: center; }
     </style>
@@ -219,8 +243,19 @@ with st.sidebar:
 
 uploaded_file = st.file_uploader("시안 이미지를 업로드하세요", type=["png", "jpg", "jpeg"])
 
-# [추가] 업로드 영역 하단 경고 문구
-st.markdown('<div class="ad-warning">⚠️ AD 마크는 자동으로 부착되니, 이미지에 광고/AD 텍스트가 포함되지 않게 꼭 체크해주세요!</div>', unsafe_allow_html=True)
+# [교체할 영역] 업로드 영역 하단 가이드 문구
+st.markdown(f"""
+    <div class="guide-container">
+        <div style="margin-bottom: 10px;">
+            <span class="guide-item"><div class="color-box" style="background-color: rgba(255, 0, 0, 0.8);"></div>상단 노치 영역</span>
+            <span class="guide-item"><div class="color-box" style="background-color: rgba(128, 0, 128, 0.8);"></div>좌우 크롭 영역</span>
+            <span class="guide-item"><div class="color-box" style="background-color: rgba(50, 255, 170, 0.8);"></div>텍스트 안전 여백</span>
+        </div>
+        <div style="color: #FF5252; font-size: 0.85rem; font-weight: bold; border-top: 1px solid #333; pt-10px; margin-top: 10px; padding-top: 10px;">
+            ⚠️ AD 마크는 자동으로 부착되니, 이미지에 광고/AD 텍스트가 포함되지 않게 꼭 체크해주세요!
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")

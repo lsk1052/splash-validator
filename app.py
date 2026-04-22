@@ -117,12 +117,23 @@ st.markdown("""
     <style>
     .stApp { background-color: #111111; color: #F2F2F2; }
     
-    /* [수정] h1(st.title)을 포함한 헤더 컬러를 화이트(#FFFFFF)로 변경 */
+    /* 타이틀 및 헤더 컬러를 화이트로 변경 */
     h1, h2, h3, h4 { color: #FFFFFF !important; } 
     
     .check-pass { font-size: 1.5rem; font-weight: 800; color: #00E676; }
     .check-fail { font-size: 1.5rem; font-weight: 800; color: #FF5252; }
     .status-text { font-size: 0.9rem; color: #AAAAAA; }
+    
+    /* 경고 문구 스타일 */
+    .ad-warning { 
+        background-color: #331111; 
+        color: #FF5252; 
+        padding: 10px; 
+        border-radius: 5px; 
+        border: 1px solid #FF5252;
+        margin-bottom: 20px;
+        font-weight: bold;
+    }
     /* 실제 사이즈 이미지가 중앙에 오도록 설정 */
     .stImage { display: flex; justify-content: center; }
     </style>
@@ -146,6 +157,9 @@ with st.sidebar:
     st.warning("⚠️ 규격이 맞지 않으면 검증 결과가 부정확할 수 있습니다.")
 
 uploaded_file = st.file_uploader("시안 이미지를 업로드하세요", type=["png", "jpg", "jpeg"])
+
+# [추가] 업로드 영역 하단 경고 문구
+st.markdown('<div class="ad-warning">⚠️ AD 마크는 자동으로 부착되니, 이미지 검수 시 광고, AD 텍스트가 포함되지 않게 꼭 체크해주세요!</div>', unsafe_allow_html=True)
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")

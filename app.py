@@ -35,38 +35,32 @@ def check_ad_text(image):
     except Exception: return []
 
 def evaluate_quality(pil_image):
-    # 이미지를 분석하기 좋게 변환 및 리사이즈
+    # 이미지를 분석하기 좋게 변환
     img_array = np.array(pil_image.convert("RGB"))
     img_cv = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
     gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
     
-    # 1. 선명도 분석 (Sobel 연산자 사용)
-    # Laplacian보다 픽셀의 변화율을 더 정밀하게 측정합니다.
+    # 1. 선명도 분석 (Sobel)
     sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
     sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
     edge_score = np.mean(np.sqrt(sobel_x**2 + sobel_y**2))
     
-    # 2. 픽셀 노이즈/거칠기 분석 (입자감 체크)
-    # 저화질 이미지에서 나타나는 특유의 자글자글한 노이즈를 측정합니다.
-    noise_score = cv2.meanStdDev(gray)[1][0][0] 
-    
-    # 3. FFT (주파수 분석) - 픽셀 깨짐(계단 현상) 감지
+    # 2. 주파수 분석 (FFT) - 픽셀 깨짐 감지
     f = np.fft.fft2(gray)
     fshift = np.fft.fftshift(f)
     magnitude_spectrum = 20 * np.log(np.abs(fshift) + 1)
-    pixel_score = np.mean(magnitude_spectrum)
+    p_score = np.mean(magnitude_spectrum)
 
-    # --- [이선경 님의 이미지 맞춤형 임계값] ---
-    # 원본(250점대)과 저화질(150점대 이하)을 가르는 기준입니다.
-    # edge_score가 낮거나 pixel_score가 비정상적으로 높으면 필터링합니다.
+    # --- [이선경 님 데이터 맞춤형 정밀 튜닝] ---
+    # 직접 확인하신 수치(175.5 vs 177.1)를 바탕으로 176.5를 기준점으로 잡습니다. 
+    is_blurry = edge_score < 15.0      # 선명도 기준 (낮으면 흐림) 
+    is_pixelated = p_score > 176.5     # 노이즈 기준 (높으면 깨짐) 
     
-    is_blurry = edge_score < 12.0    # 선명도 기준 (값이 낮을수록 흐림)
-    is_pixelated = pixel_score > 185.0 # 픽셀 노이즈 기준 (값이 높을수록 깨짐)
-    
-    # 종합 점수 (UI 표시용)
+    # [유지] 종합 점수 (UI 표시용)
+    # 선명도(edge_score)를 화면에 대표 점수로 보여줍니다. 
     quality_score = edge_score 
     
-    return is_blurry, is_pixelated, quality_score, pixel_score
+    return is_blurry, is_pixelated, quality_score, p_score
 
 # 3. OS별 규격 정의
 OS_SPECS = {

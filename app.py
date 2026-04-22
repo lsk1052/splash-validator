@@ -116,7 +116,10 @@ def apply_guide_overlay(image, os_name):
 st.markdown("""
     <style>
     .stApp { background-color: #111111; color: #F2F2F2; }
-    h1, h2, h3, h4 { color: #E60012 !important; }
+    
+    /* [수정] h1(st.title)을 포함한 헤더 컬러를 화이트(#FFFFFF)로 변경 */
+    h1, h2, h3, h4 { color: #FFFFFF !important; } 
+    
     .check-pass { font-size: 1.5rem; font-weight: 800; color: #00E676; }
     .check-fail { font-size: 1.5rem; font-weight: 800; color: #FF5252; }
     .status-text { font-size: 0.9rem; color: #AAAAAA; }
@@ -129,14 +132,6 @@ st.markdown("""
 st.title("스플래시 가이드 검증기")
 st.caption("UX/UI 디자인 품질 및 규격 자동 검수 도구")
 
-# --- [추가] 메인 화면에 규격 안내 카드 표시 ---
-st.info(f"""
-    **🚩 권장 업로드 규격**
-    * **Android:** {OS_SPECS['Android']['size'][0]}x{OS_SPECS['Android']['size'][1]}px
-    * **iOS:** {OS_SPECS['iOS']['size'][0]}x{OS_SPECS['iOS']['size'][1]}px
-    * **공통 용량:** 500KB 이하 (현재 설정 기준)
-""")
-
 with st.sidebar:
     st.header("검수 옵션")
     selected_os = st.radio("OS 선택", options=["Android", "iOS"], index=0)
@@ -146,8 +141,6 @@ with st.sidebar:
     st.markdown(f"### 📱 {selected_os} 상세 규격")
     spec = OS_SPECS[selected_os]
     st.write(f"- **권장 사이즈:** {spec['size'][0]}x{spec['size'][1]}px")
-    st.write(f"- **안전 영역 (상단):** {spec['notch_height']}px")
-    st.write(f"- **안전 영역 (좌우):** {spec['crop_side']}px")
     st.write(f"- **용량 제한:** 500KB 미만")
     
     st.warning("⚠️ 규격이 맞지 않으면 검증 결과가 부정확할 수 있습니다.")

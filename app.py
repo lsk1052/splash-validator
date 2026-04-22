@@ -9,9 +9,14 @@ st.set_page_config(
     layout="wide",
 )
 
-# 2. Gemini API 설정 (Secrets에서 키를 가져옵니다)
-genai.configure(api_key=st.secrets["AIzaSyDLCIaqIZ_L-Zh3uDVoVP028CZ5zwIvs_Q"])
-model = genai.GenerativeModel('gemini-2.0-flash')
+# 2. Gemini API 설정
+try:
+    api_key = st.secrets["GEMINI_API_KEY"]
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel("gemini-2.0-flash")
+except Exception:
+    st.error("API 키가 설정되지 않았습니다. Streamlit Secrets를 확인하세요.")
+    st.stop()
 
 def check_ad_text(image):
     try:

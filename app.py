@@ -70,16 +70,16 @@ def evaluate_quality(pil_image):
     fshift = np.fft.fftshift(f)
     p_raw = np.mean(20 * np.log(np.abs(fshift) + 1))
     
-    # [수정] 기준치를 180.0으로 높이고 감점Multiplier를 20으로 낮춤 (훨씬 너그러워짐)
-    purity_score = max(0, min(100, 100 - (p_raw - 180.0) * 20)) 
+    # [수정] 기준치를 175.0으로 다시 조이고, 감점 폭을 높여 3번 이미지를 잡아냅니다.
+    purity_score = max(0, min(100, 100 - (p_raw - 175.0) * 45)) 
     
-    # 선명도 분석
+    # 선명도 분석 (Laplacian)
     lap_var = cv2.Laplacian(gray, cv2.CV_64F).var()
-    clarity_score = max(0, min(100, lap_var / 10)) 
+    clarity_score = max(0, min(100, lap_var / 8)) 
 
-    # [수정] 판정 문턱을 낮추어 고화질 이미지가 억울하게 탈락하는 것을 방지
-    is_blurry = clarity_score < 15
-    is_pixelated = purity_score < 30 # (40 -> 30으로 하향)
+    # [수정] 픽셀 깨짐 판정 기준을 45점으로 상향하여 3번 이미지를 '화질 저하'로 분류
+    is_blurry = clarity_score < 18
+    is_pixelated = purity_score < 45 
     
     quality_score = (purity_score * 0.7) + (clarity_score * 0.3)
     
@@ -94,7 +94,6 @@ def get_quality_heatmap(pil_image):
     grid_size = 32
     blocks = []
     
-    # 1단계: 모든 구역의 점수를 먼저 계산합니다.
     for y in range(0, h, grid_size):
         for x in range(0, w, grid_size):
             block = gray[y:y+grid_size, x:x+grid_size]
@@ -102,21 +101,19 @@ def get_quality_heatmap(pil_image):
             score = cv2.Laplacian(block, cv2.CV_64F).var()
             blocks.append(((x, y), score))
     
-    # 2단계: 이미지 전체의 평균 구역 점수를 구합니다.
-    all_scores = [b[1] for b in blocks]
-    avg_score = np.mean(all_scores)
-    std_score = np.std(all_scores)
+    # [수정] 전체 구역 중 상위 2.5%에 해당하는 점수를 문턱값으로 사용
+    scores = [b[1] for b in blocks]
+    if not scores: return pil_image, 0
     
-    # 3단계: [지능형 필터] 평균보다 '표준편차의 2배' 이상 높은 곳만 빨간색으로 표시
-    # 즉, 랑콤 로고(정상 선명도)는 패스하고 OPEN RUN(비정상 노이즈)만 잡습니다.
-    detected_count = 0
-    threshold = avg_score + (std_score * 2.0)
+    # 상위 2.5% 지점을 찾습니다. (이 수치가 높을수록 'OPEN RUN'만 잡힙니다)
+    high_threshold = np.percentile(scores, 97.5) 
     
-    # 최소한의 노이즈 바닥 수치(150.0)도 함께 체크하여 너무 깨끗한 이미지는 보호
-    final_limit = max(150.0, threshold)
+    # 최소한의 노이즈 바닥 수치(250.0)를 설정하여 너무 깨끗한 이미지는 보호
+    final_limit = max(250.0, high_threshold)
 
+    detected_count = 0
     for (x, y), score in blocks:
-        if score > final_limit:
+        if score >= final_limit:
             cv2.rectangle(overlay, (x, y), (x+grid_size, y+grid_size), (0, 0, 255), -1)
             detected_count += 1
 

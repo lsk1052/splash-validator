@@ -252,14 +252,14 @@ if uploaded_file:
         st.markdown(f'<div class="status-text">{file_size_kb:.1f} KB</div>', unsafe_allow_html=True)
     
     with col3:
-        # [기준 완화] 최종 통과 점수 기준을 50 -> 40으로 조정하고 들여쓰기를 맞췄습니다.
-        if not is_blurry and not is_pixelated and quality_score >= 40:
+        # [기준 강화] 최종 통과 점수 기준을 40 -> 60으로 상향 조정했습니다.
+        if not is_blurry and not is_pixelated and quality_score >= 60:
             st.markdown('<div class="check-pass">✅ 화질 양호</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="status-text">디자인 품질: {quality_score:.0f}점</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div class="check-fail">⚠️ 화질 저하</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="status-text">품질 점수: {quality_score:.0f}점</div>', unsafe_allow_html=True)
-            st.warning("품질이 다소 낮게 측정되었습니다. 원본 이미지의 해상도를 확인해 주세요.")
+            st.warning("품질 점수가 기준(60점)에 미달되었습니다. 고화질 원본 이미지인지 확인해 주시고,  \n동일한 경고가 뜬다면 UX디자인팀에 검수 요청을 해주세요.")
             
     with col4:
         ad_list = compliance_result.get("ad_found", [])

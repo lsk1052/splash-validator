@@ -138,6 +138,31 @@ st.markdown("""
     }
 
     .stImage { display: flex; justify-content: center; }
+
+    /* --- 사이드바 행간 최적화 추가 --- */
+    
+    /* 1. 사이드바 내 마크다운 블록 사이의 기본 간격 제거 */
+    [data-testid="stSidebar"] .stMarkdown {
+        margin-bottom: -15px !important;
+    }
+
+    /* 2. 상세 규격 제목(h3)과 아래 리스트 사이의 간격 조정 */
+    [data-testid="stSidebar"] h3 {
+        margin-bottom: 5px !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* 3. 불렛 포인트(li) 내부의 행간 및 마진 조정 */
+    [data-testid="stSidebar"] li {
+        margin-bottom: -4px !important; /* 항목 간 간격 */
+        line-height: 1.3 !important;   /* 글자 자체의 세로 높이 */
+        color: #DDDDDD;
+    }
+    
+    /* 4. 사이드바 위젯 간의 전체적인 간격 미세 조정 */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0.5rem !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 

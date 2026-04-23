@@ -64,20 +64,21 @@ def evaluate_quality(pil_image):
     img_cv = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
     gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
     
-    # 노이즈 분석 (FFT) - v3.1의 엄격한 기준 적용
+    # 노이즈 분석 (FFT)
     f = np.fft.fft2(gray)
     fshift = np.fft.fftshift(f)
     p_raw = np.mean(20 * np.log(np.abs(fshift) + 1))
     
-    # 기준치를 조여 품질이 낮은 이미지를 더 정확히 판별
-    purity_score = max(0, min(100, 100 - (p_raw - 175.0) * 45)) 
+    # [기준 완화] 감점 가중치를 45 -> 30으로 낮춤 (점수가 덜 깎임)
+    purity_score = max(0, min(100, 100 - (p_raw - 175.0) * 30)) 
     
     # 선명도 분석 (Laplacian)
     lap_var = cv2.Laplacian(gray, cv2.CV_64F).var()
     clarity_score = max(0, min(100, lap_var / 8)) 
 
-    is_blurry = clarity_score < 18
-    is_pixelated = purity_score < 45 
+    # [기준 완화] 판정 문턱값을 낮춰 통과가 더 쉬워지도록 설정
+    is_blurry = clarity_score < 12  # 기존 18
+    is_pixelated = purity_score < 35 # 기존 45 
     
     quality_score = (purity_score * 0.7) + (clarity_score * 0.3)
     
@@ -251,14 +252,14 @@ if uploaded_file:
         st.markdown(f'<div class="status-text">{file_size_kb:.1f} KB</div>', unsafe_allow_html=True)
     
     with col3:
-        # 히트맵 기능이 제거된 심플한 품질 결과창
-        if not is_blurry and not is_pixelated and quality_score >= 50:
-            st.markdown('<div class="check-pass">✅ 화질 양호</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="status-text">디자인 품질: {quality_score:.0f}점</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="check-fail">⚠️ 화질 저하</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="status-text">품질 점수: {quality_score:.0f}점</div>', unsafe_allow_html=True)
-            st.warning("픽셀 깨짐이 감지되었습니다. 고화질 원본으로 변경 후 다시 시도해 주세요.")
+    # [기준 완화] 최종 통과 점수 기준을 50 -> 40으로 조정
+    if not is_blurry and not is_pixelated and quality_score >= 40:
+        st.markdown('<div class="check-pass">✅ 화질 양호</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="status-text">디자인 품질: {quality_score:.0f}점</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="check-fail">⚠️ 화질 저하</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="status-text">품질 점수: {quality_score:.0f}점</div>', unsafe_allow_html=True)
+        st.warning("품질이 다소 낮게 측정되었습니다. 원본 이미지의 해상도를 확인해 주세요.")
             
     with col4:
         ad_list = compliance_result.get("ad_found", [])

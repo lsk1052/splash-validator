@@ -143,7 +143,7 @@ st.markdown("""
     
     /* 1. 사이드바 내 마크다운 블록 마진 초기화 (음수 마진 제거!) */
     [data-testid="stSidebar"] .stMarkdown {
-        margin-bottom: 0px !important;
+        margin-bottom: 10px !important;
     }
 
     /* 2. 제목과 리스트 사이 여백 최소화 */
@@ -156,7 +156,7 @@ st.markdown("""
     /* 3. 불렛 포인트(li) 내부 간격 조정 */
     [data-testid="stSidebar"] li {
         margin-bottom: 2px !important; /* 살짝 띄워주는 게 가독성에 좋습니다 */
-        line-height: 1.4 !important;   /* 너무 좁으면 글자가 겹쳐 보여요 */
+        line-height: 1.2 !important;   /* 너무 좁으면 글자가 겹쳐 보여요 */
         color: #DDDDDD;
     }
     

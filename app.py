@@ -5,7 +5,7 @@ import numpy as np
 
 # 1. 페이지 설정
 st.set_page_config(
-    page_title="스플래시 가이드 검증기",
+    page_title="Check mate",
     page_icon="🧭",
     layout="wide",
 )
@@ -184,7 +184,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # 4. 메인 UI
-st.title("스플래시 가이드 검증기")
+st.title("Check mate")
 st.caption("UX/UI 디자인 품질 및 규격 수동 검수 도구")
 
 with st.sidebar:

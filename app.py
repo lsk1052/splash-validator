@@ -184,8 +184,8 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # 4. 메인 UI
-st.title("Check mate : 스플래시 가이드 체크")
-st.caption("광고 소재 디자인 품질 및 규격 검수 프로그램")
+st.title("Check Mate : 스플래시 가이드 체크")
+st.caption("광고 스플래시 디자인 품질 및 규격 검수 프로그램")
 
 with st.sidebar:
     st.header("검수 옵션")

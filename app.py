@@ -138,7 +138,11 @@ st.markdown("""
     }
 
     /* --- 사이드바 상세 규격 영역 정밀 제어 --- */
-
+/* 2. [추가] 사이드바 배경을 메인과 동일하게 다크화 */
+    [data-testid="stSidebar"] {
+        background-color: #111111 !important;
+        border-right: 1px solid #333333; /* 메인과 구분되는 얇은 선 */
+    }
 /* 1. 사이드바 마크다운 블록 사이의 기본 마진 최소화 */
 /* (이걸 0으로 둬야 아래에서 설정하는 개별 마진들이 정확하게 먹힙니다) */
 [data-testid="stSidebar"] .stMarkdown {

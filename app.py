@@ -185,6 +185,12 @@ st.markdown("""
     [data-testid="collapsedControl"] {
         display: none;
     }
+
+    /* 사이드바가 항상 펼쳐진 상태로 고정되도록 여백 조정 */
+    [data-testid="stSidebar"] {
+        min-width: 300px;
+        max-width: 300px;
+    }
     </style>
     """, unsafe_allow_html=True)
 

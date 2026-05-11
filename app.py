@@ -84,11 +84,18 @@ def apply_guide_overlay(image, os_name):
 # 3. 디자인 스타일 (CSS)
 st.markdown("""
     <style>
+
+    /* 1. 사이드바 내부의 접기 버튼(<<) 및 외부 펼치기 버튼(>) 모두 제거 */
+    [data-testid="stSidebarCollapseButton"], 
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
+    
     /* --- 전체 배경 및 기본 텍스트 --- */
     .stApp { background-color: #111111; }
     h1, h2, h3, h4 { color: #FFFFFF !important; }
 
-/* [수정] 메인 화면 캡션 텍스트를 강제로 흰색 고정 */
+    /* [수정] 메인 화면 캡션 텍스트를 강제로 흰색 고정 */
     /* div뿐만 아니라 내부의 모든 하위 요소까지 적용합니다. */
     [data-testid="stCaptionContainer"], 
     .stCaption, 

@@ -148,9 +148,9 @@ st.markdown("""
 
     /* [중요] 사이드바 위젯 텍스트 컬러 (OS 선택, Android, iOS) */
     /* 1. 위젯 타이틀 (예: OS 선택) */
-    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+    [data-testid="stSidebar"] [data-testid="stRadio"] label p {
         color: #FFFFFF !important;
-        font-size: 0.9rem !important;
     }
     
     /* 2. 라디오 버튼 항목 (예: Android, iOS) */

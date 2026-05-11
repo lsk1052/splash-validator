@@ -143,6 +143,10 @@ st.markdown("""
         background-color: #111111 !important;
         border-right: 1px solid #333333; /* 메인과 구분되는 얇은 선 */
     }
+/* 2. 제목(h1) 및 캡션(Caption) 컬러 조정 */
+    h1 { color: #FFFFFF !important; }
+    .stCaption { color: #BBBBBB !important; font-size: 0.95rem !important; }
+    
 /* 1. 사이드바 마크다운 블록 사이의 기본 마진 최소화 */
 /* (이걸 0으로 둬야 아래에서 설정하는 개별 마진들이 정확하게 먹힙니다) */
 [data-testid="stSidebar"] .stMarkdown {
